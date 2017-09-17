@@ -1,0 +1,6 @@
+Projects by workshop #5 from 2017.
+queens.cpp is a project that solves the N queen problem: find a way to position N queens on a NxN chess board, in a way that no queen threatens another queen.
+Compile with a compiler of your choice (checked on g++ and clang). Number of queens (N) is hardcoded, but can be found in the defines. When run, the program waits for an input of the population size.
+
+backpack.c is a project that solves the backpack problem: find an optimal way to pack a backpack with items, where each item has its own volume and price, maximizing by the total price, and with a limited total volume.
+Compile and run with a compiler of your choice (checked on gcc and clang). All parameters are hardcoded, and can be found in main().
