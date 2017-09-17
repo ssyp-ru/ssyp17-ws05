@@ -1,87 +1,319 @@
-#include <stdio.h>  
-#include <math.h>   
-#include "Header.h"
-#include <cmath>
+#include<stdio.h>
+#include<stdlib.h>
+#include<time.h>
+#include<algorithm>
+using namespace std;
+#define N 15
 
-FILE *trap_f;
-char fnameout2[256] = "trap.txt";
+struct solution {
+	int errors_number;
+	int* array;
+};
 
-void main(void) {
 
-	int h[size];
-	for (int i = 0; i < size; i++) {
-		h[i] = pow(2, i);
+struct population {
+	solution* solutions;
+	int size;
+};
+
+int hits(int* board, int n);
+
+void delete_population(population* population1)
+{
+	int i;
+	for (i = 0; i < population1->size; i++)
+		free(population1->solutions[i].array);
+	free(population1->solutions);
+	free(population1);
+}
+
+solution* mutation(solution* solution1)
+{
+	int i, j;
+	i = rand() % N;
+	j = rand() % N;
+	swap(solution1->array[i], solution1->array[j]);
+	i = rand() % N;
+	j = rand() % N;
+	swap(solution1->array[i], solution1->array[j]);
+	return solution1;
+}
+
+population* sort_solutions(population* population1)
+{
+	int i, j, swaps_counter;
+	solution tmp;
+	for (i = 0; i < population1->size; i++)
+		population1->solutions[i].errors_number = hits(population1->solutions[i].array, N);
+
+	while (1)
+	{
+		swaps_counter = 0;
+		for (j = 0; j < population1->size - 1; j++)
+			if (population1->solutions[j].errors_number > population1->solutions[j + 1].errors_number)
+			{
+				tmp = population1->solutions[j];
+				population1->solutions[j] = population1->solutions[j + 1];
+				population1->solutions[j + 1] = tmp;
+				swaps_counter++;
+			}
+		if (swaps_counter == 0)
+			break;
 	}
 
-	double Ih_trap[size] = { 0 };  //значения интеграла
-	double Ih_TheSimpsons[size] = { 0 };  //значения интеграла
-	double Ih_goose[size] = { 0 };  //значения интеграла
-	trap_f = fopen(fnameout2, "w+");
-////////////////////////////////////////////подсчет Ih и сумм Ih и вывод их//////////////////////////////////////////////////////
-	
+	return population1;
+}
 
+solution generate_solution(int n)
+{
+	solution new_solution;
+	new_solution.array = (int*)malloc(n * sizeof(int));
+	int i;
+	for (i = 0; i < n; i++)
+		new_solution.array[i] = i;
 
-	for (int j = 0; j < size; j++) {
-		double step = (b-a)/h[j];
-		double a_new = a;  //смещение
-		double b_new = a_new +step ;  //смещение
-		for (int i = 0; i < h[j]-1; i++) {
-			Ih_trap[j] += trap(a_new, b_new);
-			Ih_TheSimpsons[j] += TheSimpsons(a_new, b_new);
-			Ih_goose[j] += goose(a_new, b_new);  
-			a_new = a_new + step;   
-			b_new = b_new + step;
+	for (i = 0; i < n; i++)
+		swap(new_solution.array[i], new_solution.array[rand() % n]);
 
+	new_solution.errors_number = hits(new_solution.array, N);
+	return new_solution;
+}
+
+population* create_population(int size)
+{
+	population* x = (population*)malloc(sizeof(population));
+	x->size = size;
+	int i;
+	x->solutions = (solution*)malloc(size * sizeof(solution));
+	for (i = 0; i < size; i++)
+		x->solutions[i] = generate_solution(N);
+	x = sort_solutions(x);
+
+	return x;
+}
+
+int hits(int* board, int n)
+{
+	int x, y, i, j, hit = 0;
+
+	for (x = 0; x < n; x++)
+	{
+		y = board[x];
+
+		//lower right
+
+		i = x + 1;
+		j = y + 1;
+		while ((i < n && j < n) && (i >= 0 && j >= 0))
+		{
+			if (board[i] == j)
+			{
+				hit++;
+				break;
+			}
+			else {
+				i++;
+				j++;
+			}
+		}
+
+		//lower left
+
+		i = x + 1;
+		j = y - 1;
+		while ((i < n && j < n) && (i >= 0 && j >= 0))
+		{
+			if (board[i] == j)
+			{
+				hit++;
+				break;
+			}
+			else {
+				i++;
+				j--;
+			}
+		}
+
+		//top right
+
+		i = x - 1;
+		j = y + 1;
+		while ((i < n && j < n) && (i >= 0 && j >= 0))
+		{
+			if (board[i] == j)
+			{
+				hit++;
+				break;
+			}
+			else {
+				i--;
+				j++;
+			}
+		}
+
+		//top left
+
+		i = x - 1;
+		j = y - 1;
+		while ((i < n && j < n) && (i >= 0 && j >= 0))
+		{
+			if (board[i] == j)
+			{
+				hit++;
+				break;
+			}
+			else {
+				i--;
+				j--;
+			}
 		}
 	}
-	
-	
-
-	
-
-	fprintf(trap_f, "    Трапеция            Симпсон           Гаус по трем точкам    шаг  --  значения интегралов при данном шаге\n");
-	for (int i = 1; i < size-3; i++) {   //в i=0 мусор		
-		fprintf(trap_f, "%13.14lf   %13.14lf       %13.14lf       %d\n", Ih_trap[i], Ih_TheSimpsons[i], Ih_goose[i], h[i]);
-	}
-////////////////////////////////////////////вывод Rh=I-Ih в текстовый файл//////////////////////////////////////////////
-	double Rh_trap[size];  //I-Ih
-	double Rh_TheSimpsons[size];  //I-Ih
-	double Rh_goose[size];  //I-Ih
-	for (int i = 0; i < size; i++) {
-		Rh_trap[i] = real_integral(a, b) - Ih_trap[i];
-		Rh_TheSimpsons[i] = real_integral(a, b) - Ih_TheSimpsons[i];
-		Rh_goose[i] = real_integral(a, b) - Ih_goose[i];
-	}
 
 
-	fprintf(trap_f, "\n    Трапеция            Симпсон           Гаус по трем точкам    шаг   --  сходимсоть I-Ih\n");
-	for (int i = 1; i < size-3; i++) {  //в i=0 мусор		
-		fprintf(trap_f, "%13.14lf   %13.14lf       %13.14lf       %d\n", Rh_trap[i], Rh_TheSimpsons[i], Rh_goose[i], h[i]);
-	}
+	return hit;
+}
 
+solution crossing(solution parent_1, solution parent_2)
+{
+	solution new_solution = generate_solution(N);
+	int k;
+	int i = 0, j = 0, index, val;
 
-/////////////////////////////////////////////Сравнениек оценки порядка погрешности////////////////////////////////////////////////////////////////////////////////////////
+	while (i < N && j < N)
+	{
+		if (parent_1.array[i] == parent_2.array[j])
+		{
+			index = i;
+			val = parent_1.array[i];
 
-	fprintf(trap_f, "\n   по Рунге          По Формуле      значение h\n");
-	double fla[size];  //по формуле
-	double runge[size];   //значение погрешности по рунге
-	for (int i = 1; i < size-3; i++) {
-		fla[i] =
-			abs(
-				log((Ih_trap[i] - Ih_trap[i + 1]) / (Ih_trap[i + 1] - Ih_trap[i + 2])) / log(2.)
-				)
-			;
-		runge[i] = runge_f(Ih_trap, i);
-		fprintf(trap_f, "%13.14lf  %13.14lf   %d\n", runge[i], fla[i], h[i]);
-
-	}
-///////////////////////////////////////////Правка/////////////////////////////////////////////
-	fprintf(trap_f, "трапеция с учетом правки       значение hi\n");
-	for (int i = 1; i < size-3; i++) {
-		fprintf(trap_f, "%13.14lf   			%d\n", Ih_trap[i] + runge[i], h[i]);
+			for (k = 0; k < N; k++)
+			{
+				if (new_solution.array[k] == val)
+					swap(new_solution.array[k], new_solution.array[index]);
+			}
+		}
+		i++;
+		j++;
 	}
 
-	fprintf(trap_f, "\nИтеграл по ньютону-лейбницу %13.14lf",real_integral(a,b));
+	return new_solution;
+}
+
+population* new_generation(population* x)
+{
+	int index = x->size - x->size / 3;
+	int i, j;
+	int n = 0;
+	for (i = index; i < x->size; i++)
+		free(x->solutions[i].array);
+	for (i = index; i < x->size; i++)
+	{
+		x->solutions[i] = crossing(x->solutions[rand() % index], x->solutions[rand() % index]);
+	}
+
+	if ((x->solutions[0].errors_number == 2) && (x->solutions[(int)(x->size*0.5)].errors_number == 2) && (rand() % 10 == 0))
+	{
+		for (j = 0; j < N; j++)
+			if (x->solutions[0].array[j] == x->solutions[(int)(x->size*0.5)].array[j])
+				n++;
+		if (n == N)
+		{
+			index = x->size / 10;
+			for (i = index; i < x->size; i++)
+			{
+				free(x->solutions[i].array);
+				x->solutions[i] = generate_solution(N);
+			}
+		}
+	}
+
+	for (i = x->size / 10; i < x->size; i++)
+		if (rand() % 10 == 0)
+			mutation(&(x->solutions[i]));
+
+	x = sort_solutions(x);
+
+	return x;
+}
+
+void print_solutions(population* A, int n)
+{
+	printf("\n");
+	int i, j;
+	for (i = 0; i < n; i++)
+	{
+		for (j = 0; j < N; j++)
+			printf("%d ", A->solutions[i].array[j]);
+		printf(" - %d", hits(A->solutions[i].array, N));
+		printf("\n");
+	}
+	printf("\n");
 
 }
 
+void print_solution(solution A)
+{
+	int i;
+	printf("\n");
+	for (i = 0; i < N; i++)
+		printf("%d ", A.array[i]);
+	printf("\n");
+}
+
+void migration(population* population_1, population* population_2)
+{
+	int i, j, k;
+	solution tmp;
+	for (i = 0; i < population_1->size / 2; i++)
+	{
+		k = rand() % population_1->size;
+		j = rand() % population_1->size;
+		tmp = population_1->solutions[k];
+		population_1->solutions[k] = population_2->solutions[j];
+		population_2->solutions[j] = tmp;
+	}
+}
+
+int main()
+{
+	srand(time(0));
+	int solutions_number;
+	scanf("%d", &solutions_number);
+	population* A;
+	population* B;
+	int n = 0, k = 0;
+	int unsolved = 1;
+	int unsolved1 = 1;
+		A = create_population(solutions_number);
+		B = create_population(solutions_number);
+		while (unsolved && unsolved1)
+		{
+			A = new_generation(A);
+			B = new_generation(B);
+			k++;
+			if (k == 500)
+			{
+				migration(A, B);
+				k = 0;
+			}
+			n++;
+			unsolved = A->solutions[0].errors_number;
+			unsolved1 = B->solutions[0].errors_number;
+			printf("%d:  %d %d %d \t %d:  %d %d %d\n", n, unsolved, A->solutions[A->size / 2].errors_number,
+				A->solutions[A->size - 1].errors_number, n, unsolved1, B->solutions[A->size / 2].errors_number,
+				B->solutions[B->size - 1].errors_number);
+
+		}
+
+
+	if (unsolved == 0)
+		print_solution(A->solutions[0]);
+	else
+		print_solution(B->solutions[0]);
+
+	delete_population(A);
+	delete_population(B);
+
+
+	return 0;
+}
